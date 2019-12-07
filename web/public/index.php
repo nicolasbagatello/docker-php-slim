@@ -26,4 +26,15 @@ $app->get('/hello/{name}', function ($request, $response, $args) {
     return $response;
 });
 
+$app->get('/db/list', function ($request, $response, $args) {
+    try {
+        $dsn = 'mysql:host=mysql;dbname=local_env_db;charset=utf8;port=3306';
+        $pdo = new PDO($dsn, 'dev', 'devPass');
+        var_dump($pdo->query('select * from test limit 1'));
+        $response->getBody()->write();
+    } catch (PDOException $e) {
+        echo $e->getMessage();
+    }
+});
+
 $app->run();
