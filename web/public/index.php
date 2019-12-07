@@ -1,15 +1,23 @@
 <?php
 
-include '../app/vendor/autoload.php';
-$foo = new App\Acme\Foo();
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
+use Slim\Factory\AppFactory;
 
-?><!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8">
-        <title>Docker <?php echo $foo->getName(); ?></title>
-    </head>
-    <body>
-        <h1>Docker <?php echo $foo->getName(); ?></h1>
-    </body>
-</html>
+include '../app/vendor/autoload.php';
+
+$app = AppFactory::create();
+
+$app->get('/', function (Request $request, Response $response, $args) {
+    try {
+        $dsn = 'mysql:host=mysql;dbname=local_env_db;charset=utf8;port=3306';
+        $pdo = new PDO($dsn, 'dev', 'devPass');
+        $response->getBody()->write("DB connected successfully!");
+    } catch (PDOException $e) {
+        echo $e->getMessage();
+    }
+
+    return $response;
+});
+
+$app->run();
