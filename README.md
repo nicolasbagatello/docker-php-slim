@@ -88,7 +88,7 @@ ___
 To install [Git](http://git-scm.com/book/en/v2/Getting-Started-Installing-Git), download it and install following the instructions :
 
 ```sh
-git clone https://github.com/nanoninja/docker-nginx-php-mysql.git
+git clone git@github.com:nicolasbagatello/docker-php-slim.git
 ```
 
 Go to the project directory :
@@ -153,7 +153,8 @@ ___
 
 3. Open your favorite browser :
 
-    * [http://localhost:8000](http://localhost:8000/)
+    * [http://localhost:8000/hello/nico](http://localhost:8000/hello/nico)
+    * [http://localhost:8000/db](http://localhost:8000/db)
     * [https://localhost:3000](https://localhost:3000/) ([HTTPS](#configure-nginx-with-ssl-certificates) not configured by default)
     * [http://localhost:8080](http://localhost:8080/) PHPMyAdmin (username: dev, password: dev)
 
