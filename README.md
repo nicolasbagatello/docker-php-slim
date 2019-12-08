@@ -1,9 +1,10 @@
 All credits to https://github.com/nanoninja/docker-nginx-php-mysql (https://github.com/nanoninja) who did an incredible job.
 
 
-# Nginx PHP MySQL [![Build Status](https://travis-ci.org/nanoninja/docker-nginx-php-mysql.svg?branch=master)](https://travis-ci.org/nanoninja/docker-nginx-php-mysql) [![GitHub version](https://badge.fury.io/gh/nanoninja%2Fdocker-nginx-php-mysql.svg)](https://badge.fury.io/gh/nanoninja%2Fdocker-nginx-php-mysql)
+# Nginx PHP MySQL
 
 Docker running Nginx, PHP-FPM, Composer, MySQL and PHPMyAdmin.
+Added slim 4, php-unit, phinx, php_codesniffer and more
 
 ## Overview
 
@@ -61,18 +62,7 @@ On Ubuntu and Debian these are available in the meta-package build-essential. On
 sudo apt install build-essential
 ```
 
-### Images to use
-
-* [Nginx](https://hub.docker.com/_/nginx/)
-* [MySQL](https://hub.docker.com/_/mysql/)
-* [PHP-FPM](https://hub.docker.com/r/nanoninja/php-fpm/)
-* [Composer](https://hub.docker.com/_/composer/)
-* [PHPMyAdmin](https://hub.docker.com/r/phpmyadmin/phpmyadmin/)
-* [Generate Certificate](https://hub.docker.com/r/jacoelho/generate-certificate/)
-
-You should be careful when installing third party web servers such as MySQL or Nginx.
-
-This project use the following ports :
+### Ports
 
 | Server     | Port |
 |------------|------|
@@ -94,7 +84,7 @@ git clone git@github.com:nicolasbagatello/docker-php-slim.git
 Go to the project directory :
 
 ```sh
-cd docker-nginx-php-mysql
+cd docker-php-slim
 ```
 
 ### Project tree
@@ -120,6 +110,11 @@ cd docker-nginx-php-mysql
     ├── app
     │   ├── composer.json.dist
     │   ├── phpunit.xml.dist
+    │   ├── db
+    │   │   └── migrations
+    │   │   │   └── 000001-test-migraion.php
+    │   │   └── seeds
+    │   │       └── 000001-test-seed.php
     │   ├── src
     │   │   └── Foo.php
     │   └── test
@@ -127,6 +122,7 @@ cd docker-nginx-php-mysql
     │       └── bootstrap.php
     └── public
         └── index.php
+    ├── phinx.yml
 ```
 
 ___
@@ -170,17 +166,19 @@ ___
 
 When developing, you can use [Makefile](https://en.wikipedia.org/wiki/Make_(software)) for doing the following operations :
 
-| Name          | Description                                  |
-|---------------|----------------------------------------------|
-| clean         | Clean directories for reset                  |
-| code-sniff    | Check the API with PHP Code Sniffer (`PSR2`) |
-| composer-up   | Update PHP dependencies with composer        |
-| docker-start  | Create and start containers                  |
-| docker-stop   | Stop and clear all services                  |
-| logs          | Follow log output                            |
-| mysql-dump    | Create backup of all databases               |
-| mysql-restore | Restore backup of all databases              |
-| test          | Test application with phpunit                |
+| Name           | Description                                  |
+|----------------|----------------------------------------------|
+| clean          | Clean directories for reset                  |
+| code-sniff     | Check the API with PHP Code Sniffer (`PSR2`) |
+| composer-up    | Update PHP dependencies with composer        |
+| docker-start   | Create and start containers                  |
+| docker-stop    | Stop and clear all services                  |
+| logs           | Follow log output                            |
+| mysql-dump     | Create backup of all databases               |
+| mysql-restore  | Restore backup of all databases              |
+| test           | Test application with phpunit                |
+| run-migrations | Run all migrations                           |
+| run-seeds      | Run all seeds                                |
 
 ### Examples
 
