@@ -10,7 +10,8 @@ help:
 	@echo "usage: make COMMAND"
 	@echo ""
 	@echo "Commands:"
-	@echo "  code-sniff                Check the API with PHP Code Sniffer (PSR2)"
+	@echo "  code-sniff-check          Check the API with PHP Code Sniffer (PSR2)"
+	@echo "  code-sniff-fix            Fix PSR2 using PHP Code Sniffer"
 	@echo "  clean                     Clean directories for reset"
 	@echo "  composer-up               Update PHP dependencies with composer"
 	@echo "  create-migration          Create new migrations -> sudo make create-migration NAME='MyNewMigration'"
@@ -39,9 +40,15 @@ clean:
 	@rm -Rf web/app/report
 	@rm -Rf etc/ssl/*
 
-code-sniff:
+code-sniff-check:
 	@echo "Checking the standard code..."
 	@docker-compose exec -T php ./app/vendor/bin/phpcs -v --standard=PSR2 app/src
+	@docker-compose exec -T php ./app/vendor/bin/phpcs -v --standard=PSR2 public
+
+code-sniff-fix:
+	@echo "Checking the standard code..."
+	@docker-compose exec -T php ./app/vendor/bin/phpcbf -v --standard=PSR2 app/src
+	@docker-compose exec -T php ./app/vendor/bin/phpcbf -v --standard=PSR2 public
 
 composer-up:
 	@docker run --rm -v $(shell pwd)/web/app:/app composer update
