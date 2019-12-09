@@ -2,7 +2,12 @@
 
 use Phinx\Migration\AbstractMigration;
 
-class MyTestMigration extends AbstractMigration
+/**
+ * RECOMMENDED: Use the command line to create the empty migration file
+ * cli example: sudo make create-migration NAME='TestingMigration'
+ *
+ */
+class TestingMigration extends AbstractMigration
 {
     /**
      * Migrate Up.

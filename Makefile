@@ -10,17 +10,22 @@ help:
 	@echo "usage: make COMMAND"
 	@echo ""
 	@echo "Commands:"
-	@echo "  code-sniff          Check the API with PHP Code Sniffer (PSR2)"
-	@echo "  clean               Clean directories for reset"
-	@echo "  composer-up         Update PHP dependencies with composer"
-	@echo "  docker-start        Create and start containers"
-	@echo "  docker-stop         Stop and clear all services"
-	@echo "  logs                Follow log output"
-	@echo "  mysql-dump          Create backup of all databases"
-	@echo "  mysql-restore       Restore backup of all databases"
-	@echo "  test                Test application"
-	@echo "  run-migrations      Run all migrations"
-	@echo "  run-seeds           Run all seeds"
+	@echo "  code-sniff                Check the API with PHP Code Sniffer (PSR2)"
+	@echo "  clean                     Clean directories for reset"
+	@echo "  composer-up               Update PHP dependencies with composer"
+	@echo "  create-migration          Create new migrations -> sudo make create-migration NAME='MyNewMigration'"
+	@echo "  create-seed               Create new seed -> sudo make create-seed NAME='MyNewSeed'"
+	@echo "  docker-start              Create and start containers"
+	@echo "  docker-stop               Stop and clear all services"
+	@echo "  logs                      Follow log output"
+	@echo "  mysql-dump                Create backup of all databases"
+	@echo "  mysql-restore             Restore backup of all databases"
+	@echo "  test                      Test application"
+	@echo "  rollback-all-migrations   Rollback all migrations"
+	@echo "  rollback                  Run all seeds -> sudo make rollback DATE='2019'"
+	@echo "  run-all-migrations        Run all migrations"
+	@echo "  run-all-seeds             Run all seeds"
+
 
 init:
 	@$(shell cp -n $(shell pwd)/web/app/composer.json.dist $(shell pwd)/web/app/composer.json 2> /dev/null)
@@ -41,6 +46,14 @@ code-sniff:
 composer-up:
 	@docker run --rm -v $(shell pwd)/web/app:/app composer update
 
+create-migration:
+	@docker-compose exec -T php ./app/vendor/bin/phinx create ${NAME}
+	@make resetOwner
+
+create-seed:
+	@docker-compose exec -T php ./app/vendor/bin/phinx seed:create ${NAME}
+	@make resetOwner
+
 docker-start: init
 	docker-compose up -d
 
@@ -59,16 +72,24 @@ mysql-dump:
 mysql-restore:
 	@docker exec -i $(shell docker-compose ps -q mysqldb) mysql -u"$(MYSQL_ROOT_USER)" -p"$(MYSQL_ROOT_PASSWORD)" < $(MYSQL_DUMPS_DIR)/db.sql 2>/dev/null
 
-run-migrations:
+run-all-migrations:
 	@docker-compose exec -T php ./app/vendor/bin/phinx migrate
 	@make resetOwner
 
-run-seeds:
+run-all-seeds:
 	@docker-compose exec -T php ./app/vendor/bin/phinx seed:run
 	@make resetOwner
 
 test: code-sniff
 	@docker-compose exec -T php ./app/vendor/bin/phpunit --colors=always --configuration ./app/
+	@make resetOwner
+
+rollback-all-migrations:
+	@docker-compose exec -T php ./app/vendor/bin/phinx rollback
+	@make resetOwner
+
+rollback:
+	@docker-compose exec -T php ./app/vendor/bin/phinx rollback -t ${DATE}
 	@make resetOwner
 
 resetOwner:

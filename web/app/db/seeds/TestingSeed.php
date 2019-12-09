@@ -2,7 +2,12 @@
 
 use Phinx\Seed\AbstractSeed;
 
-class MyTestSeeder extends AbstractSeed
+/**
+ * RECOMMENDED: Use the command line to create the empty migration file
+ * cli example: sudo make create-seed NAME='TestingSeed'
+ *
+ */
+class TestingSeed extends AbstractSeed
 {
     /**
      * Run Method.
@@ -17,10 +22,10 @@ class MyTestSeeder extends AbstractSeed
         $data = [
             [
                 'firstname'    => 'foo',
-                'created' => null,
+                'reg_date' => null,
             ],[
                 'firstname'    => 'bar',
-                'created' => null,
+                'reg_date' => null,
             ]
         ];
 
