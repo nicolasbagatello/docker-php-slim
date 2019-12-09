@@ -8,6 +8,7 @@ include '../app/vendor/autoload.php';
 
 $app = AppFactory::create();
 
+// very bad bad way to know if our DB connection is working
 $app->get('/db', function (Request $request, Response $response, $args) {
     try {
         $dsn = 'mysql:host=mysql;dbname=local_env_db;charset=utf8;port=3306';
@@ -20,18 +21,30 @@ $app->get('/db', function (Request $request, Response $response, $args) {
     return $response;
 });
 
+// re versioned example of hello world?
 $app->get('/hello/{name}', function ($request, $response, $args) {
-    $response->getBody()->write("Hello, " . $args['name']);
+    $name = empty($args['name']) ? ' world ' : $args['name'];
+
+    $response->getBody()->write("Hello, " . $name);
 
     return $response;
 });
 
+// make sure you ran all migrations and seeds first using MAKE if not this wont work
 $app->get('/db/list', function ($request, $response, $args) {
     try {
         $dsn = 'mysql:host=mysql;dbname=local_env_db;charset=utf8;port=3306';
         $pdo = new PDO($dsn, 'dev', 'devPass');
-        var_dump($pdo->query('select * from test limit 1'));
-        $response->getBody()->write();
+
+        $response->getBody()->write(
+            json_encode(
+                array_pop(
+                    $pdo->query('select * from test limit 1')->fetchAll(PDO::FETCH_ASSOC)
+                )
+            )
+        );
+
+        return $response;
     } catch (PDOException $e) {
         echo $e->getMessage();
     }

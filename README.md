@@ -196,6 +196,11 @@ make help
 
 ___
 
+## Migrations (updated to use sphinx) http://docs.phinx.org/en/latest/commands.html
+```sh
+sudo make run-migrations
+```
+
 ## Use Docker commands
 
 ### Installing package with composer
