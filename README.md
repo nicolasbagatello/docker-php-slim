@@ -1,9 +1,10 @@
-All credits to https://github.com/nanoninja/docker-nginx-php-mysql (https://github.com/nanoninja) who did an incredible job.
+All credits to https://github.com/nanoninja/docker-nginx-php-mysql (@nanoninja) who did an incredible job.
+I added a bunch of stuff that I think is really useful when creating a new project on php.
 
 
 # Nginx PHP MySQL
 
-Docker running Nginx, PHP-FPM, Composer, MySQL and PHPMyAdmin.
+Docker running Nginx, PHP-FPM, Composer and MySQL.
 Added slim 4, php-unit, phinx, php_codesniffer and more
 
 ## Overview
@@ -67,7 +68,6 @@ sudo apt install build-essential
 | Server     | Port |
 |------------|------|
 | MySQL      | 8989 |
-| PHPMyAdmin | 8080 |
 | Nginx      | 8000 |
 | Nginx SSL  | 3000 |
 
@@ -112,9 +112,9 @@ cd docker-php-slim
     │   ├── phpunit.xml.dist
     │   ├── db
     │   │   └── migrations
-    │   │   │   └── 000001-test-migraion.php
+    │   │   │   └── 20191209155649_testing_Migration.php
     │   │   └── seeds
-    │   │       └── 000001-test-seed.php
+    │   │       └── TestingSeed.php
     │   ├── src
     │   │   └── Foo.php
     │   └── test
@@ -152,7 +152,6 @@ ___
     * [http://localhost:8000/hello/nico](http://localhost:8000/hello/nico)
     * [http://localhost:8000/db](http://localhost:8000/db)
     * [https://localhost:3000](https://localhost:3000/) ([HTTPS](#configure-nginx-with-ssl-certificates) not configured by default)
-    * [http://localhost:8080](http://localhost:8080/) PHPMyAdmin (username: dev, password: dev)
 
 4. Stop and clear services
 
@@ -165,6 +164,7 @@ ___
 ## Use Makefile
 
 When developing, you can use [Makefile](https://en.wikipedia.org/wiki/Make_(software)) for doing the following operations :
+- Probably outdated command list :( so make sure to check make help toget the latest
 
 | Name           | Description                                  |
 |----------------|----------------------------------------------|

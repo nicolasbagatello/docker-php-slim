@@ -2,6 +2,7 @@ version: '3'
 services:
     web:
         image: nginx:alpine
+        container_name: web
         volumes:
             - "./etc/nginx/default.conf:/etc/nginx/conf.d/default.conf"
             - "./etc/ssl:/etc/ssl"
@@ -17,8 +18,10 @@ services:
         depends_on:
             - php
             - mysqldb
+            - redis
     php:
         image: nanoninja/php-fpm:${PHP_VERSION}
+        container_name: php
         restart: always
         volumes:
             - "./etc/php/php.ini:/usr/local/etc/php/conf.d/php.ini"
@@ -28,17 +31,6 @@ services:
         volumes:
             - "./web/app:/app"
         command: install
-    myadmin:
-        image: phpmyadmin/phpmyadmin
-        container_name: phpmyadmin
-        ports:
-            - "8080:80"
-        environment:
-            - PMA_ARBITRARY=1
-            - PMA_HOST=${MYSQL_HOST}
-        restart: always
-        depends_on:
-            - mysqldb
     mysqldb:
         image: mysql:${MYSQL_VERSION}
         container_name: ${MYSQL_HOST}
@@ -54,3 +46,9 @@ services:
             - "8989:3306"
         volumes:
             - "./data/db/mysql:/var/lib/mysql"
+    redis:
+        image: redis
+        command: ["redis-server", "--appendonly", "yes"]
+        container_name: redis
+        volumes:
+            - "./data/redis-data:/redis-data"

@@ -8,7 +8,8 @@
         "slim/slim": "^4.1",
         "slim/http": "^0.7",
         "slim/psr7": "^0.3",
-        "robmorgan/phinx": "^0.11"
+        "robmorgan/phinx": "^0.11",
+        "predis/predis": "^1.1"
     },
     "autoload": {
         "psr-4": {

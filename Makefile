@@ -33,8 +33,10 @@ init:
 
 clean:
 	@rm -Rf data/db/mysql/*
+	@rm -Rf data/db/redis-data/*
 	@rm -Rf $(MYSQL_DUMPS_DIR)/*
 	@rm -Rf web/app/vendor
+	@rm -Rf web/app/composer.json
 	@rm -Rf web/app/composer.lock
 	@rm -Rf web/app/doc
 	@rm -Rf web/app/report
