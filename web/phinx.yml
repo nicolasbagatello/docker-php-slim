@@ -9,7 +9,7 @@ environments:
   production:
     adapter: mysql
     host: mysql
-    name: local_env_db
+    name: db
     user: root
     pass: 'rootPass'
     port: 3306
@@ -18,7 +18,7 @@ environments:
   development:
     adapter: mysql
     host: mysql
-    name: local_env_db
+    name: db
     user: root
     pass: 'rootPass'
     port: 3306

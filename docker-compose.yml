@@ -28,6 +28,7 @@ services:
             - "./web:/var/www/html"
     composer:
         image: "composer"
+        container_name: composer
         volumes:
             - "./web/app:/app"
         command: install

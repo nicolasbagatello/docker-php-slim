@@ -27,7 +27,6 @@ help:
 	@echo "  run-all-migrations        Run all migrations"
 	@echo "  run-all-seeds             Run all seeds"
 
-
 init:
 	@$(shell cp -n $(shell pwd)/web/app/composer.json.dist $(shell pwd)/web/app/composer.json 2> /dev/null)
 
