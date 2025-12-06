@@ -1,0 +1,98 @@
+name: Security Scan
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  security:
+    name: Security & Secrets Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # IMPORTANT: scan full history
+
+      # -----------------------------
+      # 1. GITLEAKS
+      # -----------------------------
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          args: detect --source . --no-git
+
+      # -----------------------------
+      # 2. TRUFFLEHOG (deep secrets)
+      # -----------------------------
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog@v3
+        with:
+          path: .
+          # Search git history too
+          base: origin/main
+
+      # -----------------------------
+      # 3. detect-secrets
+      # -----------------------------
+      - name: Install detect-secrets
+        run: pip install detect-secrets
+
+      - name: Run detect-secrets
+        run: |
+          detect-secrets scan > .secrets.baseline
+          detect-secrets audit .secrets.baseline || exit 1
+
+      # -----------------------------
+      # 4. NPM / Node dependency scan
+      # -----------------------------
+      - name: Install Node (optional)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run npm audit
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+            npm audit --production --audit-level=high
+          fi
+
+      # -----------------------------
+      # 5. Python dependency scan
+      # -----------------------------
+      - name: Python dependency audit
+        uses: pypa/gh-action-pip-audit@v1.0.8
+        if: hashFiles('requirements.txt') != ''
+
+      # -----------------------------
+      # 6. CodeQL Analysis (vulnerabilities)
+      # -----------------------------
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'javascript', 'typescript', 'python', 'go' ] # adjust
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v3
+
+    - name: Analyze
+      uses: github/codeql-action/analyze@v3
