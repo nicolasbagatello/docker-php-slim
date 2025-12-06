@@ -14,10 +14,15 @@ jobs:
   ###############################################
   detect-languages:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       languages: ${{ steps.detect.outputs.languages }}
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Detect languages from GitHub API
         id: detect
         uses: actions/github-script@v7
@@ -50,9 +55,9 @@ jobs:
               detected.push("javascript");  // default fallback
             }
 
-            return {
-              languages: JSON.stringify([...new Set(detected)])
-            };
+            const languages = JSON.stringify([...new Set(detected)]);
+            core.setOutput('languages', languages);
+            console.log('Detected languages:', languages);
 
   ###############################################
   # 2. Run GITLEAKS (strong secret scanner)
@@ -64,10 +69,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        with:
-          args: detect --source . --verbose --redact --baseline-path gitleaks-baseline.json
+      - name: Install Gitleaks
+        run: |
+          wget https://github.com/gitleaks/gitleaks/releases/download/v8.30.0/gitleaks_8.30.0_linux_x64.tar.gz
+          tar -xzf gitleaks_8.30.0_linux_x64.tar.gz
+          sudo mv gitleaks /usr/local/bin/
+          gitleaks version
+
+      - name: Run Gitleaks with baseline
+        run: gitleaks detect --source . --verbose --redact --baseline-path gitleaks-baseline.json
 
   ###############################################
   # 3. Run CodeQL using auto-detected languages
