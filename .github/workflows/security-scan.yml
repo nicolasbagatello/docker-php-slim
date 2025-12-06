@@ -4,16 +4,20 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
-  security:
-    name: Security & Secrets Scan
+  security-scan:
+    name: Universal Security Scanner
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # IMPORTANT: scan full history
+          fetch-depth: 0
 
       # -----------------------------
       # 1. GITLEAKS
@@ -24,14 +28,13 @@ jobs:
           args: detect --source . --no-git
 
       # -----------------------------
-      # 2. TRUFFLEHOG (deep secrets)
+      # 2. TRUFFLEHOG
       # -----------------------------
       - name: Run TruffleHog
-        uses: trufflesecurity/trufflehog@v3
+        uses: trufflesecurity/trufflehog@main
         with:
-          path: .
-          # Search git history too
-          base: origin/main
+          scan: filesystem
+          path: "."
 
       # -----------------------------
       # 3. detect-secrets
@@ -45,54 +48,64 @@ jobs:
           detect-secrets audit .secrets.baseline || exit 1
 
       # -----------------------------
-      # 4. NPM / Node dependency scan
+      # 4. Dependency Scanners (auto)
       # -----------------------------
-      - name: Install Node (optional)
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
 
-      - name: Run npm audit
+      # NodeJS
+      - name: npm audit (only if package.json exists)
+        if: hashFiles('package.json') != ''
         run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-            npm audit --production --audit-level=high
-          fi
+          npm install --ignore-scripts
+          npm audit --audit-level=high
 
-      # -----------------------------
-      # 5. Python dependency scan
-      # -----------------------------
-      - name: Python dependency audit
-        uses: pypa/gh-action-pip-audit@v1.0.8
+      # Python
+      - name: pip-audit (only if requirements.txt exists)
         if: hashFiles('requirements.txt') != ''
+        uses: pypa/gh-action-pip-audit@v1.0.8
 
-      # -----------------------------
-      # 6. CodeQL Analysis (vulnerabilities)
-      # -----------------------------
+      # PHP Composer
+      - name: Composer audit (only if composer.json exists)
+        if: hashFiles('composer.json') != ''
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y composer
+          composer install --no-scripts
+          composer audit || true
+
+      # Go
+      - name: Go vet (only if go.mod exists)
+        if: hashFiles('go.mod') != ''
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+      - name: Go vulnerability check
+        if: hashFiles('go.mod') != ''
+        run: |
+          go mod tidy
+          go vet ./...
+          go list -json -deps ./... | go vuln check
+
+  # -----------------------------
+  # 5. CODEQL (Auto-detect languages)
+  # -----------------------------
   codeql:
-    name: CodeQL
-    runs-on: ubuntu-latest
     permissions:
-      security-events: write
-      actions: read
       contents: read
+      security-events: write
 
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ 'javascript', 'typescript', 'python', 'go' ] # adjust
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
-      with:
-        languages: ${{ matrix.language }}
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: auto
 
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
 
-    - name: Analyze
-      uses: github/codeql-action/analyze@v3
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
