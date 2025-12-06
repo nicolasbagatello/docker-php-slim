@@ -18,6 +18,7 @@ jobs:
       contents: read
     outputs:
       languages: ${{ steps.detect.outputs.languages }}
+      has-languages: ${{ steps.detect.outputs.has-languages }}
 
     steps:
       - name: Checkout code
@@ -42,22 +43,24 @@ jobs:
               "Go": "go",
               "Ruby": "ruby",
               "Java": "java",
-              "PHP": "cpp",   // CodeQL uses C/C++ for PHP security (closest match)
               "C": "cpp",
-              "C++": "cpp"
+              "C++": "cpp",
+              "C#": "csharp"
+              // Note: PHP is NOT supported by CodeQL
             };
 
             const detected = Object.keys(langMap)
               .filter(lang => supported[lang])
               .map(lang => supported[lang]);
 
-            if (detected.length === 0) {
-              detected.push("javascript");  // default fallback
-            }
+            // Remove duplicates
+            const uniqueLanguages = [...new Set(detected)];
 
-            const languages = JSON.stringify([...new Set(detected)]);
+            const languages = JSON.stringify(uniqueLanguages);
             core.setOutput('languages', languages);
-            console.log('Detected languages:', languages);
+            core.setOutput('has-languages', uniqueLanguages.length > 0 ? 'true' : 'false');
+            console.log('Detected CodeQL-supported languages:', languages);
+            console.log('Has supported languages:', uniqueLanguages.length > 0);
 
   ###############################################
   # 2. Run GITLEAKS (strong secret scanner)
@@ -84,6 +87,7 @@ jobs:
   ###############################################
   codeql:
     needs: [detect-languages]
+    if: needs.detect-languages.outputs.has-languages == 'true'
     runs-on: ubuntu-latest
 
     strategy:
