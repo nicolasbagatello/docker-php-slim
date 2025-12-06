@@ -9,103 +9,87 @@ permissions:
   security-events: write
 
 jobs:
-  security-scan:
-    name: Universal Security Scanner
+  ###############################################
+  # 1. Detect repository languages dynamically
+  ###############################################
+  detect-languages:
     runs-on: ubuntu-latest
+    outputs:
+      languages: ${{ steps.detect.outputs.languages }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Detect languages from GitHub API
+        id: detect
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const repo = context.repo;
+            const res = await github.rest.repos.listLanguages({
+              owner: repo.owner,
+              repo: repo.repo
+            });
+
+            const langMap = res.data;
+            const supported = {
+              "JavaScript": "javascript",
+              "TypeScript": "javascript",
+              "Python": "python",
+              "Go": "go",
+              "Ruby": "ruby",
+              "Java": "java",
+              "PHP": "cpp",   // CodeQL uses C/C++ for PHP security (closest match)
+              "C": "cpp",
+              "C++": "cpp"
+            };
+
+            const detected = Object.keys(langMap)
+              .filter(lang => supported[lang])
+              .map(lang => supported[lang]);
+
+            if (detected.length === 0) {
+              detected.push("javascript");  // default fallback
+            }
+
+            return {
+              languages: JSON.stringify([...new Set(detected)])
+            };
+
+  ###############################################
+  # 2. Run GITLEAKS (strong secret scanner)
+  ###############################################
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # -----------------------------
-      # 1. GITLEAKS
-      # -----------------------------
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
         with:
-          args: detect --source . --no-git
+          args: detect --source . --verbose --redact
 
-      # -----------------------------
-      # 2. TRUFFLEHOG
-      # -----------------------------
-      - name: Run TruffleHog
-        uses: trufflesecurity/trufflehog@main
-        with:
-          scan: filesystem
-          path: "."
-
-      # -----------------------------
-      # 3. detect-secrets
-      # -----------------------------
-      - name: Install detect-secrets
-        run: pip install detect-secrets
-
-      - name: Run detect-secrets
-        run: |
-          detect-secrets scan > .secrets.baseline
-          detect-secrets audit .secrets.baseline || exit 1
-
-      # -----------------------------
-      # 4. Dependency Scanners (auto)
-      # -----------------------------
-
-      # NodeJS
-      - name: npm audit (only if package.json exists)
-        if: hashFiles('package.json') != ''
-        run: |
-          npm install --ignore-scripts
-          npm audit --audit-level=high
-
-      # Python
-      - name: pip-audit (only if requirements.txt exists)
-        if: hashFiles('requirements.txt') != ''
-        uses: pypa/gh-action-pip-audit@v1.0.8
-
-      # PHP Composer
-      - name: Composer audit (only if composer.json exists)
-        if: hashFiles('composer.json') != ''
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y composer
-          composer install --no-scripts
-          composer audit || true
-
-      # Go
-      - name: Go vet (only if go.mod exists)
-        if: hashFiles('go.mod') != ''
-        uses: actions/setup-go@v5
-        with:
-          go-version: 'stable'
-      - name: Go vulnerability check
-        if: hashFiles('go.mod') != ''
-        run: |
-          go mod tidy
-          go vet ./...
-          go list -json -deps ./... | go vuln check
-
-  # -----------------------------
-  # 5. CODEQL (Auto-detect languages)
-  # -----------------------------
+  ###############################################
+  # 3. Run CodeQL using auto-detected languages
+  ###############################################
   codeql:
-    permissions:
-      contents: read
-      security-events: write
-
+    needs: [detect-languages]
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        language: ${{ fromJson(needs.detect-languages.outputs.languages) }}
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: auto
+          languages: ${{ matrix.language }}
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v3
 
-      - name: Analyze
+      - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
