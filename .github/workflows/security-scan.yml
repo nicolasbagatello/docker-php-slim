@@ -10,60 +10,7 @@ permissions:
 
 jobs:
   ###############################################
-  # 1. Detect repository languages dynamically
-  ###############################################
-  detect-languages:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    outputs:
-      languages: ${{ steps.detect.outputs.languages }}
-      has-languages: ${{ steps.detect.outputs.has-languages }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Detect languages from GitHub API
-        id: detect
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const repo = context.repo;
-            const res = await github.rest.repos.listLanguages({
-              owner: repo.owner,
-              repo: repo.repo
-            });
-
-            const langMap = res.data;
-            const supported = {
-              "JavaScript": "javascript",
-              "TypeScript": "javascript",
-              "Python": "python",
-              "Go": "go",
-              "Ruby": "ruby",
-              "Java": "java",
-              "C": "cpp",
-              "C++": "cpp",
-              "C#": "csharp"
-              // Note: PHP is NOT supported by CodeQL
-            };
-
-            const detected = Object.keys(langMap)
-              .filter(lang => supported[lang])
-              .map(lang => supported[lang]);
-
-            // Remove duplicates
-            const uniqueLanguages = [...new Set(detected)];
-
-            const languages = JSON.stringify(uniqueLanguages);
-            core.setOutput('languages', languages);
-            core.setOutput('has-languages', uniqueLanguages.length > 0 ? 'true' : 'false');
-            console.log('Detected CodeQL-supported languages:', languages);
-            console.log('Has supported languages:', uniqueLanguages.length > 0);
-
-  ###############################################
-  # 2. Run GITLEAKS (strong secret scanner)
+  # 1. Run GITLEAKS (strong secret scanner)
   ###############################################
   gitleaks:
     runs-on: ubuntu-latest
@@ -83,27 +30,23 @@ jobs:
         run: gitleaks detect --source . --verbose --redact --baseline-path gitleaks-baseline.json
 
   ###############################################
-  # 3. Run CodeQL using auto-detected languages
+  # 2. Run Semgrep (SAST with PHP, JS, TS, Go, HTML support)
   ###############################################
-  codeql:
-    needs: [detect-languages]
-    if: needs.detect-languages.outputs.has-languages == 'true'
+  semgrep:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        language: ${{ fromJson(needs.detect-languages.outputs.languages) }}
+    container:
+      image: semgrep/semgrep
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+      - name: Run Semgrep scan
+        run: semgrep scan --config auto --sarif --output semgrep-results.sarif
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: Upload Semgrep results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
         with:
-          languages: ${{ matrix.language }}
-
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+          sarif_file: semgrep-results.sarif
