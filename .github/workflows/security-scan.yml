@@ -67,7 +67,7 @@ jobs:
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
         with:
-          args: detect --source . --verbose --redact
+          args: detect --source . --verbose --redact --baseline-path gitleaks-baseline.json
 
   ###############################################
   # 3. Run CodeQL using auto-detected languages
